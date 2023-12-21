@@ -2,6 +2,36 @@
 #include <stdlib.h>
 #include <math.h>
 
+void print_pA(int **pA, int n){
+    for(int i=0;i<n;i++){
+        for(int j=0;j<n;j++){
+            printf("%d ", pA[i][j]);
+        }printf("\n");
+    }
+}
+
+int findMax(int arr[], int idx, int n) {
+    int max = arr[idx];
+    int index = 0;
+    for (int i = idx; i < n; i++) {
+        if (arr[i] > max) {
+            max = arr[i];
+        }
+    }
+    return max;
+}
+
+int findMax_index(int arr[], int idx, int n) {
+    int max = arr[idx];
+    int index = 0;
+    for (int i = idx; i < n; i++) {
+        if (arr[i] > max) {
+            index = i;
+        }
+    }
+    return index;
+}
+
 void print_pAug(int **pAug, int n){
     for(int i=0;i<n;i++){
         for(int j=0;j<n+1;j++){
@@ -37,7 +67,12 @@ int lcm_array2(int *arr){
     int lcm = 1;
     int size = sizeof(arr) / sizeof(arr[0]);
     for(int i=0;i<size+1;i++){
-        lcm *= arr[i];
+        if(arr[i]==0){
+            lcm*=1;
+        }else{
+            lcm *= arr[i];
+        }
+        //lcm *= arr[i];
         gcd_result = gcd(arr[i], gcd_result);
     }
     lcm /= gcd_result;
@@ -83,9 +118,14 @@ void unify2(int **mat, int index, int n){
     col_lcm = lcm_array2(a_transpose[index]);
     //printf("lcm: %d \n", col_lcm);
     for(int cursor=0;cursor<_r;cursor++){
+        if(a_transpose[index][cursor]==0){
+            factor[cursor] = col_lcm / 1;
+        }else{
             factor[cursor] = col_lcm / a_transpose[index][cursor];
-            //printf("factor: %d \n", factor[cursor]);
         }
+        //factor[cursor] = col_lcm / a_transpose[index][cursor];
+        //printf("factor: %d \n", factor[cursor]);
+    }
     for(int row=index;row<_r;row++){
         for(int col=0;col<_c;col++){
             mat[row][col] *= factor[row];
@@ -123,38 +163,72 @@ void solve_x(int **Aug, int n, int *x){
     free(temp);
 }
 
-void eliminate3(int **mat, int index_row, int n){
-    int *temp = (int *)malloc(n * sizeof(int));
+int check_U(int n, int** Aug){
+    /*
+    int *diagnal = (int *)malloc(n * sizeof(int));
     for(int i=0;i<n;i++){
-        temp[i] = mat[index_row][i];
+        diagnal[i] = temp[i][i];
     }
-    for(int row=0;row<n;row++){
-        for(int col=0;col<n;col++){
-            mat[row][col] -= temp[col];
+    int dia_lcm = lcm_array2(diagnal);
+    for(int i=0;i<n;i++){
+        diagnal[i] /= dia_lcm;
+    }
+    */
+    //check U here
+    for(int col=0;col<n;col++){
+        for(int row=col+1;row<n;row++){
+            if(Aug[row][col]!=0){
+                return 0;
+            }
         }
+    }// check U
+    return 1; 
+}
+
+void swap_row(int **Aug, int row1, int row2, int n){
+    int *temp = (int *)malloc((n+1) * sizeof(int));
+    for(int i=0;i<n+1;i++){
+        temp[i] = Aug[row1][i];
     }
-    for(int i=0;i<n;i++){
-        mat[index_row][i] = temp[i];
+    for(int i=0;i<n+1;i++){
+        Aug[row1][i] = Aug[row2][i];
+    }
+    for(int i=0;i<n+1;i++){
+        Aug[row2][i] = temp[i];
     }
     free(temp);
 }
 
+void rearrange(int n, int **Aug){
+    int _r = n, _c = n+1;
+    int **a_transpose = (int **)malloc(_c * sizeof(int *));
+    for(int i=0;i<_c;i++){
+        a_transpose[i] = (int *)malloc(_r * sizeof(int));
+    }
 
-void check(int n, int* pA){
+    transpose2(a_transpose, Aug, _r, _c);
+
     int **temp = (int **)malloc(n * sizeof(int *));
     for(int i=0;i<n;i++){
         temp[i] = (int *)malloc((n) * sizeof(int));
     }
-    for(int i=0;i<n;i++){
-        for(int j=0;j<n;j++){
-            temp[i][j] = *(pA + i*n + j);
+    for(int i=0;i<_r;i++){
+        for(int j=0;j<_c;j++){
+            temp[i][j] = Aug[i][j];
         }
     }
-    for(int index=0;index<n;index++){
-        eliminate3(temp, index, n);
+
+    for(int i=0;i<n;i++){ 
+        if(Aug[i][i] != findMax(a_transpose[i], i, n)){
+            //printf("%d \n", i);
+            //printf("%d \n", findMax(a_transpose[i], i, n));
+            swap_row(Aug, i, findMax_index(a_transpose[i], i, n), n);
+            transpose2(a_transpose, Aug, _r, _c);
+            print_pAug(Aug, n);
+        }
     }
-    free(temp);
 }
+
 
 int gaussian_(int n, int* pA, int* py, int **px){
     int **Aug = (int **)malloc(n * sizeof(int *));
@@ -162,8 +236,23 @@ int gaussian_(int n, int* pA, int* py, int **px){
         Aug[i] = (int *)malloc((n+1) * sizeof(int));
     }
     merge(n, pA, py, Aug);
-    printf("Augmented: \n");
+    rearrange(n, Aug);
+    printf("Rearranged & Augmented: \n");
     print_pAug(Aug, n);
+    int check = check_U(n, Aug);
+    printf("Check Upper: %d \n", check);
+    if(check==1){
+        //merge(n, pA, py, Aug);
+        solve_x(Aug, n, *px);
+        print_x(*px, n);
+        return 1;
+    }
+    //merge(n, pA, py, Aug);
+    //printf("Original: \n");
+    //solve_x(Aug, n, *px);
+    //print_x(*px, n);
+
+    //print_pAug(Aug, n);
     for(int index=0;index<n;index++){
         unify2(Aug, index, n);
         eliminate2(Aug, index, n);
@@ -179,16 +268,14 @@ int gaussian_(int n, int* pA, int* py, int **px){
 int main(){
 
     int n = 3;
-    int b_y[3] = {6,17,34};
+    int b_y[3] = {1,2,3};
     int B[][3] = {
-        {1,1,1},
-        {1,1,1},
-        {1,1,1}
+        {0,0,1},
+        {0,1,0},
+        {1,0,0}
     };
 
     int* b_x = malloc(n * sizeof(int));
-    check(n, (int *)B);
-
     gaussian_(n, (int *)B, b_y, &b_x);
     free(b_x);
     
