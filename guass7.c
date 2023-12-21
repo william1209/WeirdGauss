@@ -123,6 +123,39 @@ void solve_x(int **Aug, int n, int *x){
     free(temp);
 }
 
+void eliminate3(int **mat, int index_row, int n){
+    int *temp = (int *)malloc(n * sizeof(int));
+    for(int i=0;i<n;i++){
+        temp[i] = mat[index_row][i];
+    }
+    for(int row=0;row<n;row++){
+        for(int col=0;col<n;col++){
+            mat[row][col] -= temp[col];
+        }
+    }
+    for(int i=0;i<n;i++){
+        mat[index_row][i] = temp[i];
+    }
+    free(temp);
+}
+
+
+void check(int n, int* pA){
+    int **temp = (int **)malloc(n * sizeof(int *));
+    for(int i=0;i<n;i++){
+        temp[i] = (int *)malloc((n) * sizeof(int));
+    }
+    for(int i=0;i<n;i++){
+        for(int j=0;j<n;j++){
+            temp[i][j] = *(pA + i*n + j);
+        }
+    }
+    for(int index=0;index<n;index++){
+        eliminate3(temp, index, n);
+    }
+    free(temp);
+}
+
 int gaussian_(int n, int* pA, int* py, int **px){
     int **Aug = (int **)malloc(n * sizeof(int *));
     for(int i=0;i<n;i++){
@@ -154,6 +187,8 @@ int main(){
     };
 
     int* b_x = malloc(n * sizeof(int));
+    check(n, (int *)B);
+
     gaussian_(n, (int *)B, b_y, &b_x);
     free(b_x);
     
