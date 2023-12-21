@@ -268,9 +268,9 @@ int gaussian_(int n, int* pA, int* py, int **px){
 int main(){
 
     int n = 3;
-    int b_y[3] = {1,2,3};
+    int b_y[3] = {2,1,1};
     int B[][3] = {
-        {0,0,1},
+        {0,1,1},
         {0,1,0},
         {1,0,0}
     };
